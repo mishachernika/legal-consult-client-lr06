@@ -23,6 +23,17 @@ const ALLOWED_TAGS = new Set([
   'A',
 ]);
 
+// Старі записи могли пройти через серверну HTML-ескапізацію і зберегтися як
+// `&lt;p&gt;...&lt;/p&gt;`. Декодуємо такий рядок один раз ПЕРЕД санітизацією —
+// інакше користувач побачить самі теги. Будь-яка розмітка після декодування
+// усе одно проходить через whitelist нижче.
+function decodeEscapedMarkup(input: string): string {
+  if (!/&lt;\/?[a-z][^&]*&gt;/i.test(input)) return input;
+  const decoder = document.createElement('textarea');
+  decoder.innerHTML = input;
+  return decoder.value;
+}
+
 function copyAllowedAttributes(el: Element): Element {
   if (el.tagName === 'A') {
     const href = el.getAttribute('href');
@@ -45,7 +56,7 @@ function copyAllowedAttributes(el: Element): Element {
 
 export function sanitizeHtml(input: string): { html: string; text: string } {
   const template = document.createElement('template');
-  template.innerHTML = input;
+  template.innerHTML = decodeEscapedMarkup(input);
 
   const walk = (node: Node, parent: Node) => {
     for (const child of [...node.childNodes]) {
