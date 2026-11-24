@@ -194,8 +194,8 @@ export default function LawyersListPage() {
             </div>
             <p className="mt-2 line-clamp-2 text-sm">{l.bio ?? 'Опис відсутній.'}</p>
             <p className="mt-2 text-sm">
-              Рейтинг: <span className="font-semibold">{l.rating ? `${l.rating}/5` : 'новий'}</span> · Досвід:{' '}
-              {l.experienceYears || '—'} р. ·{' '}
+              Рейтинг: <span className="font-semibold">{l.rating ? `${l.rating}/5` : 'новий'}</span>{' '}
+              · Досвід: {l.experienceYears || '—'} р. ·{' '}
               <span className="font-semibold text-primary-600">
                 {formatPrice(l.pricePerHour)}/год
               </span>

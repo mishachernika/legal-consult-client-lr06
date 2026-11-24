@@ -55,14 +55,18 @@ export default function HomePage() {
               Юридична допомога, коли вона справді потрібна
             </h1>
             <p className="mt-5 text-lg leading-8 text-primary-100">
-              Знайдіть юриста за сферою права, обговоріть деталі в чаті та тримайте всі
-              консультації в одному кабінеті.
+              Знайдіть юриста за сферою права, обговоріть деталі в чаті та тримайте всі консультації
+              в одному кабінеті.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <ButtonLink to="/lawyers" size="lg">
                 Знайти юриста
               </ButtonLink>
-              <ButtonLink to={user ? ROUTES.dashboard : ROUTES.register} size="lg" variant="secondary">
+              <ButtonLink
+                to={user ? ROUTES.dashboard : ROUTES.register}
+                size="lg"
+                variant="secondary"
+              >
                 {user ? 'Відкрити кабінет' : 'Створити акаунт'}
               </ButtonLink>
             </div>

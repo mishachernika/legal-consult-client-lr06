@@ -182,9 +182,7 @@ export default function ConsultationsListPage() {
               ? 'Спробуйте змінити пошук або фільтр.'
               : 'Створіть першу консультацію через юриста.'
           }
-          action={
-            <ButtonLink to="/consultations/create">Нова консультація</ButtonLink>
-          }
+          action={<ButtonLink to="/consultations/create">Нова консультація</ButtonLink>}
         />
       )}
 

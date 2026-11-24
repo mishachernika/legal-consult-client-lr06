@@ -11,8 +11,7 @@ export const consultationSchema = z.object({
     // react-hook-form повертає порожнє поле як ''. Без цього z.coerce.number('')
     // перетворював його на 0 та помилково вимагав клієнта навіть у звичайного користувача.
     (value) => (value === '' || value == null ? undefined : value),
-    z
-      .coerce
+    z.coerce
       .number({ error: 'Оберіть клієнта' })
       .int()
       .positive({ error: 'Оберіть клієнта' })

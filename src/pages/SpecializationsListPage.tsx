@@ -91,9 +91,7 @@ export default function SpecializationsListPage() {
 
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl font-bold">Сфери права</h1>
-        {isAdmin && (
-          <ButtonLink to="/specializations/create">Додати сферу</ButtonLink>
-        )}
+        {isAdmin && <ButtonLink to="/specializations/create">Додати сферу</ButtonLink>}
       </div>
 
       <div className="mb-4">
