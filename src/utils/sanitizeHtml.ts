@@ -28,10 +28,15 @@ const ALLOWED_TAGS = new Set([
 // інакше користувач побачить самі теги. Будь-яка розмітка після декодування
 // усе одно проходить через whitelist нижче.
 function decodeEscapedMarkup(input: string): string {
-  if (!/&lt;\/?[a-z][^&]*&gt;/i.test(input)) return input;
-  const decoder = document.createElement('textarea');
-  decoder.innerHTML = input;
-  return decoder.value;
+  let decoded = input;
+  // Підтримуємо і подвійне екранізування зі старих записів. Максимум дві
+  // ітерації достатньо для наявних даних і не перетворює звичайний текст.
+  for (let i = 0; i < 2 && /&(?:amp;)?lt;\/?[a-z][^&]*&(?:amp;)?gt;/i.test(decoded); i += 1) {
+    const decoder = document.createElement('div');
+    decoder.innerHTML = decoded;
+    decoded = decoder.textContent ?? decoded;
+  }
+  return decoded;
 }
 
 function copyAllowedAttributes(el: Element): Element {
