@@ -1,4 +1,4 @@
-# LegalConsult — клієнтська частина (ЛР04 + ЛР05)
+# LegalConsult — фінальна клієнтська частина (ЛР04–ЛР06)
 
 ## Автор
 
@@ -6,7 +6,16 @@
 
 ## Опис проєкту
 
-React-клієнт для **онлайн-платформи юридичних консультацій**. Серверна частина — окремий репозиторій `legal-consult-api-lr03` (Node.js + Express + Prisma + PostgreSQL + Socket.io). ЛР04 — базова архітектура (Vite + TS + Tailwind 4 + роутинг + UI-компоненти + темна тема); ЛР05 — повнофункціональний інтерфейс: аутентифікація, захищені маршрути, CRUD сутностей, валідація форм, пошук/пагінація/сортування, сповіщення.
+React-клієнт для **онлайн-платформи юридичних консультацій**. Серверна частина — окремий репозиторій `legal-consult-api-lr03` (Node.js + Express + Prisma + PostgreSQL + Socket.io). ЛР06 завершує проєкт: додає реальний час, PWA, інтерактивні компоненти, оптимізацію збірки, тести та підготовку до деплою.
+
+## Нове в ЛР06
+
+- Socket.io-client: одне кероване з'єднання, JWT у handshake, reconnect, replay подій, присутність користувачів і реальне оновлення кешу TanStack Query;
+- доступні модальні вікна на Headless UI: портал, focus trap, Escape, блокування фону й анімація;
+- Dashboard Workspace: графік статусів (Recharts), tab-и, календар, пошукове dropdown-поле, dnd-kit для пріоритетів, rich-text нотатка й вибір аватара з preview/масштабом;
+- lazy loading усіх маршрутів і окремі chunks для React, Query, Socket.io та Recharts;
+- PWA: web manifest, service worker, precache статичних ресурсів і Stale-While-Revalidate для публічного довідника;
+- SEO/OG meta-теги, `vercel.json`, готовий GitHub Actions workflow та Vitest-тести.
 
 ## Функціональність
 
@@ -33,6 +42,8 @@ React-клієнт для **онлайн-платформи юридичних �
 - Zustand 5 (persist) — сесія користувача
 - TanStack Query 5 — дані сервера (кеш за queryKey, інвалідація)
 - react-hot-toast — toast-сповіщення
+- Socket.io-client, Headless UI, dnd-kit, Recharts, react-day-picker
+- vite-plugin-pwa, Vitest + Testing Library
 - ESLint 10 (flat config) + Prettier
 
 ## API-ендпоінти серверної частини (legal-consult-api-lr03)
@@ -67,6 +78,7 @@ npm run lint                 # ESLint
 npm run format:check         # Prettier
 npm run build                # typecheck + продакшен-збірка
 npm run preview              # перегляд збірки на :4173
+npm test                     # unit-тести компонентів і хуків
 ```
 
 ### Тестовий обліковий запис (seed сервера ЛР03)
@@ -155,3 +167,16 @@ src/
 ## CI
 
 `.github/workflows/ci.yml` — на кожен push у `main`: `npm ci` → `npm run lint` → `npm run format:check` → `npm run build` (Node 24).
+
+## Розгортання на Vercel
+
+У корені є `vercel.json` для SPA routing і `.github/workflows/deploy.yml` для CI/CD. Перед першим деплоєм потрібно створити Vercel-проєкт і задати секрети GitHub Actions: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`.
+
+На Vercel додайте змінні середовища:
+
+```text
+VITE_API_URL=https://<ваш-api>/api
+VITE_SOCKET_URL=https://<ваш-api>
+```
+
+Після отримання URL клієнта задайте його як `FRONTEND_URL` серверної частини та перезапустіть API, щоб CORS і Socket.io приймали клієнт.
