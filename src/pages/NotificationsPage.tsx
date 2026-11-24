@@ -1,12 +1,11 @@
-import { useState } from 'react';
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useRef, useState } from 'react';
+import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import Badge from '@/components/common/Badge';
 import Breadcrumbs from '@/components/common/Breadcrumbs';
 import Button from '@/components/common/Button';
 import EmptyState from '@/components/common/EmptyState';
 import List from '@/components/common/List';
-import Pagination from '@/components/common/Pagination';
 import { TableSkeleton } from '@/components/common/Skeleton';
 import { notificationsService } from '@/services/notifications.service';
 import type { AppNotification } from '@/types/api.types';
@@ -31,16 +30,33 @@ const PRIORITY_VARIANTS: Record<string, 'neutral' | 'info' | 'warning' | 'danger
 // Сповіщення поточного користувача: фільтр непрочитаних, прочитати/прочитати всі, видалити
 export default function NotificationsPage() {
   const queryClient = useQueryClient();
-  const [page, setPage] = useState(1);
   const [onlyUnread, setOnlyUnread] = useState(false);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
-  const query = { page, limit: 10, unread: onlyUnread };
+  const { data, isPending, isError, error, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useInfiniteQuery({
+      queryKey: ['notifications', { unread: onlyUnread }],
+      initialPageParam: 1,
+      queryFn: ({ pageParam }) =>
+        notificationsService.getAll({ page: pageParam, limit: 10, unread: onlyUnread }),
+      getNextPageParam: (lastPage) =>
+        lastPage.pagination.hasMore ? lastPage.pagination.page + 1 : undefined,
+    });
+  const notifications = data?.pages.flatMap((page) => page.data) ?? [];
+  const unreadCount = data?.pages[0]?.unreadCount ?? 0;
 
-  const { data, isPending, isError, error } = useQuery({
-    queryKey: ['notifications', query],
-    queryFn: () => notificationsService.getAll(query),
-    placeholderData: keepPreviousData,
-  });
+  useEffect(() => {
+    const target = loadMoreRef.current;
+    if (!target || !hasNextPage) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) void fetchNextPage();
+      },
+      { rootMargin: '160px' }
+    );
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [fetchNextPage, hasNextPage]);
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['notifications'] });
 
@@ -71,10 +87,7 @@ export default function NotificationsPage() {
 
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl font-bold">
-          Сповіщення{' '}
-          {data && data.unreadCount > 0 && (
-            <Badge variant="danger">{data.unreadCount} непрочитаних</Badge>
-          )}
+          Сповіщення {unreadCount > 0 && <Badge variant="danger">{unreadCount} непрочитаних</Badge>}
         </h1>
         <div className="flex gap-2">
           <Button
@@ -82,7 +95,6 @@ export default function NotificationsPage() {
             size="sm"
             onClick={() => {
               setOnlyUnread((v) => !v);
-              setPage(1);
             }}
           >
             Лише непрочитані
@@ -105,17 +117,17 @@ export default function NotificationsPage() {
         </p>
       )}
 
-      {data && data.data.length === 0 && !isPending && (
+      {!isPending && notifications.length === 0 && (
         <EmptyState
           title="Сповіщень немає"
           text="Тут з'являться події про ваші консультації, повідомлення та відгуки."
         />
       )}
 
-      {data && data.data.length > 0 && (
+      {notifications.length > 0 && (
         <>
           <List>
-            {data.data.map((n: AppNotification) => (
+            {notifications.map((n: AppNotification) => (
               <li
                 key={n.id}
                 className={`flex items-start justify-between gap-4 px-5 py-4 ${n.readAt ? 'opacity-70' : 'bg-primary-50/50 dark:bg-primary-950/30'}`}
@@ -145,7 +157,17 @@ export default function NotificationsPage() {
               </li>
             ))}
           </List>
-          <Pagination meta={data.pagination} page={page} onPageChange={setPage} />
+          <div
+            ref={loadMoreRef}
+            className="py-5 text-center text-sm text-gray-500"
+            aria-live="polite"
+          >
+            {isFetchingNextPage
+              ? 'Завантаження наступних сповіщень…'
+              : hasNextPage
+                ? 'Прокрутіть нижче, щоб завантажити ще'
+                : 'Усі сповіщення завантажено'}
+          </div>
         </>
       )}
     </div>

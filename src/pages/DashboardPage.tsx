@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router';
 import Badge from '@/components/common/Badge';
 import Card from '@/components/common/Card';
+import AdvancedWorkspace from '@/components/dashboard/AdvancedWorkspace';
 import {
   CONSULTATION_STATUS_LABELS,
   CONSULTATION_STATUS_VARIANTS,
@@ -97,6 +98,7 @@ export default function DashboardPage() {
           </div>
         )}
       </section>
+      <AdvancedWorkspace consultations={recent?.data ?? []} />
     </div>
   );
 }
