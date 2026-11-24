@@ -8,14 +8,10 @@ on:
     branches: [main]
   workflow_dispatch:
 
-# Секрети недоступні у критеріях if напряму — передаємо через env-змінну:
-# поки VERCEL_TOKEN не додано у Secrets репозиторію, деплой пропускається.
-env:
-  HAS_VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN != '' }}
-
 jobs:
   deploy:
-    if: env.HAS_VERCEL_TOKEN == 'true'
+    # поки секрети не додано — job пропускається, і робочий процес лишається зеленим
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.VERCEL_TOKEN != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
