@@ -124,6 +124,10 @@ export default function ConsultationFormPage() {
   const watchedClientId = watch('clientId');
   const watchedScheduledAt = watch('scheduledAt');
   const watchedDescription = watch('description') ?? '';
+  const descriptionLength = watchedDescription
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .trim().length;
 
   const selectedLawyer = lawyerOptions.find((o) => o.value === String(watchedLawyerId)) ?? null;
   const selectedClient = clientOptions.find((o) => o.value === String(watchedClientId)) ?? null;
@@ -260,7 +264,11 @@ export default function ConsultationFormPage() {
             <FormField
               label="Опис ситуації"
               error={errors.description?.message}
-              hint="Виділяйте головне форматуванням — текст збережеться разом із розміткою"
+              hint={
+                descriptionLength < 10
+                  ? `Опишіть ситуацію щонайменше 10 символами — зараз ${descriptionLength}/10`
+                  : `Опис достатній (${descriptionLength} символів). Форматування також збережеться.`
+              }
             >
               <Suspense fallback={<Loading />}>
                 <RichTextEditor

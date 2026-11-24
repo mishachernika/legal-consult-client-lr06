@@ -132,7 +132,7 @@ export default function AvatarUpload() {
       )}
       <div>
         <p className="text-sm text-gray-600 dark:text-gray-400">
-          Аватар обрізається до квадрата й зберігається у файловому сервісі (ЛР02)
+          Додайте фото або ілюстрацію для профілю. Перед збереженням можна буде обрізати зображення.
         </p>
         <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={onPick} />
         <Button
