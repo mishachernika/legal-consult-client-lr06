@@ -190,15 +190,33 @@ export default function ConsultationFormPage() {
         {isEdit ? `Редагування консультації #${consultationId}` : 'Нова консультація'}
       </h1>
 
+      {!isEdit && (
+        <p className="mb-4 rounded-lg border border-primary-200 bg-primary-50 px-4 py-3 text-sm text-primary-900 dark:border-primary-900 dark:bg-primary-950/40 dark:text-primary-100">
+          Після створення відкриється сторінка консультації. У блоці «Чат» можна одразу написати
+          юристу — повідомлення надходитимуть без перезавантаження сторінки.
+        </p>
+      )}
+
       <form
-        onSubmit={handleSubmit((data) => {
-          // адмін має явно обрати клієнта (сам сервер для ролі CLIENT підставляє req.user.userId)
-          if (isAdmin && !isEdit && !data.clientId) {
-            setError('clientId', { message: 'Оберіть клієнта' });
-            return;
+        onSubmit={handleSubmit(
+          (data) => {
+            // адмін має явно обрати клієнта (сам сервер для ролі CLIENT підставляє req.user.userId)
+            if (isAdmin && !isEdit && !data.clientId) {
+              setError('clientId', { message: 'Оберіть клієнта' });
+              return;
+            }
+            mutation.mutate(data);
+          },
+          (formErrors) => {
+            const firstError =
+              formErrors.clientId ??
+              formErrors.lawyerId ??
+              formErrors.topic ??
+              formErrors.description ??
+              formErrors.scheduledAt;
+            toast.error(firstError?.message ?? 'Перевірте, чи всі поля заповнені правильно');
           }
-          mutation.mutate(data);
-        })}
+        )}
         className="space-y-4 rounded-lg bg-white p-6 shadow dark:bg-gray-900"
         noValidate
       >
