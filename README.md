@@ -144,7 +144,7 @@ ImageCrop-*               ~26  kB (8 kB gzip)   — react-easy-crop
 3. Після отримання URL клієнта задати його як `FRONTEND_URL` серверної частини та перезапустити API (CORS і Socket.io).
 4. Далі Vercel розгортає проєкт при кожному пуші у `main`; `vercel.json` переписує всі шляхи на `index.html` (SPA-роутинг).
 
-Альтернативно — деплой через GitHub Actions: `.github/workflows/deploy.yml` перевозить збірку на Vercel після кожного пуша в `main`. Секрети репозиторію: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` (значення з `.vercel/project.json` після `npx vercel link`). Поки секретів немає, job автоматично пропускається.
+Альтернативно — деплой через GitHub Actions: `.github/workflows/deploy.yml` перевозить збірку на Vercel після кожного пуша в `main`. Секрети репозиторію: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` (значення з `.vercel/project.json` після `npx vercel link`). Поки секретів немає, крок деплою автоматично пропускається (робочий процес лишається зеленим).
 
 ## CI
 

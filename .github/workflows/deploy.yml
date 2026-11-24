@@ -10,22 +10,20 @@ on:
 
 jobs:
   deploy:
-    # поки секрети не додано — job пропускається, і робочий процес лишається зеленим
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.VERCEL_TOKEN != ''
     runs-on: ubuntu-latest
+    # значення секретів доступні на рівні job; умова без секретів перевіряється на кроці
+    env:
+      HAS_VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
       - name: Deploy (білд виконує Vercel)
+        if: env.HAS_VERCEL_TOKEN == 'true'
         run: npx vercel@latest deploy --prod --yes --token=${{ secrets.VERCEL_TOKEN }}
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Пропущено — секрет VERCEL_TOKEN не налаштований
+        if: env.HAS_VERCEL_TOKEN != 'true'
+        run: echo "Додайте VERCEL_TOKEN, VERCEL_ORG_ID і VERCEL_PROJECT_ID у Secrets репозиторію (інструкція — README, розділ «Розгортання на Vercel»)."
