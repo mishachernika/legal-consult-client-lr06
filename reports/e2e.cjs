@@ -3,6 +3,7 @@
 //
 // Запуск: API ЛР03 на :3000 + `npm run dev` на :5173, потім
 //   node reports/e2e.cjs
+// Для іншого порту: E2E_BASE_URL=http://localhost:5174 node reports/e2e.cjs
 // Браузер береться з CHROME_PATH (замовчуванням — Google Chrome на macOS).
 const fs = require('fs');
 const path = require('path');
@@ -14,7 +15,7 @@ function loadPuppeteer() {
   return require('/tmp/lr4-shots/node_modules/puppeteer-core');
 }
 
-const BASE = 'http://localhost:5173';
+const BASE = process.env.E2E_BASE_URL ?? 'http://localhost:5173';
 const SHOTS = path.join(__dirname, 'screenshots');
 fs.mkdirSync(SHOTS, { recursive: true });
 

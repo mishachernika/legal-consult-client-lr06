@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useNavigate } from 'react-router';
+import { useNavigate } from 'react-router';
 import toast from 'react-hot-toast';
 import Breadcrumbs from '@/components/common/Breadcrumbs';
 import Button from '@/components/common/Button';
+import ButtonLink from '@/components/common/ButtonLink';
 import Input from '@/components/common/Input';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
 import { TableSkeleton } from '@/components/common/Skeleton';
@@ -91,9 +92,7 @@ export default function SpecializationsListPage() {
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl font-bold">Сфери права</h1>
         {isAdmin && (
-          <Link to="/specializations/create">
-            <Button>Додати сферу</Button>
-          </Link>
+          <ButtonLink to="/specializations/create">Додати сферу</ButtonLink>
         )}
       </div>
 

@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useNavigate } from 'react-router';
+import { useNavigate } from 'react-router';
 import toast from 'react-hot-toast';
 import Badge from '@/components/common/Badge';
 import Breadcrumbs from '@/components/common/Breadcrumbs';
 import Button from '@/components/common/Button';
+import ButtonLink from '@/components/common/ButtonLink';
 import EmptyState from '@/components/common/EmptyState';
 import Input from '@/components/common/Input';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
@@ -134,9 +135,7 @@ export default function ConsultationsListPage() {
 
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl font-bold">Консультації</h1>
-        <Link to="/consultations/create">
-          <Button>Нова консультація</Button>
-        </Link>
+        <ButtonLink to="/consultations/create">Нова консультація</ButtonLink>
       </div>
 
       <div className="mb-4 flex flex-wrap gap-3">
@@ -184,9 +183,7 @@ export default function ConsultationsListPage() {
               : 'Створіть першу консультацію через юриста.'
           }
           action={
-            <Link to="/consultations/create">
-              <Button>Нова консультація</Button>
-            </Link>
+            <ButtonLink to="/consultations/create">Нова консультація</ButtonLink>
           }
         />
       )}

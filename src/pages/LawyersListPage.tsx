@@ -14,6 +14,7 @@ import { useSocketEvent } from '@/hooks/useSocketEvent';
 import { lawyersService, type LawyersQuery } from '@/services/lawyers.service';
 import { specializationsService } from '@/services/specializations.service';
 import { formatPrice } from '@/utils/format';
+import { toAppFileUrl } from '@/utils/fileUrl';
 
 const SORT_OPTIONS = [
   { value: 'rating:desc', label: 'За рейтингом (спочатку найвищий)' },
@@ -22,6 +23,32 @@ const SORT_OPTIONS = [
   { value: 'pricePerHour:desc', label: 'За ціною (спочатку дорожчі)' },
   { value: 'experienceYears:desc', label: 'За досвідом (спочатку досвідченіші)' },
 ] as const;
+
+function LawyerAvatar({ name, avatar }: { name: string; avatar?: string | null }) {
+  if (avatar) {
+    return (
+      <img
+        src={toAppFileUrl(avatar)}
+        alt={`Аватар ${name}`}
+        className="h-11 w-11 shrink-0 rounded-full object-cover ring-2 ring-primary-100 dark:ring-primary-900"
+      />
+    );
+  }
+
+  return (
+    <span
+      aria-hidden="true"
+      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary-100 text-sm font-bold text-primary-700 dark:bg-primary-900 dark:text-primary-200"
+    >
+      {name
+        .split(' ')
+        .slice(0, 2)
+        .map((part) => part[0])
+        .join('')
+        .toUpperCase()}
+    </span>
+  );
+}
 
 // Каталог юристів із нескінченним прокручуванням (рівень 2): useInfiniteQuery
 // накопичує сторінки, а IntersectionObserver на «сторожі» в кінці списку підвантажує
@@ -138,10 +165,16 @@ export default function LawyersListPage() {
             key={l.id}
             className="flex h-full cursor-pointer flex-col transition-shadow hover:shadow-lg"
             title={
-              <span className="flex items-center justify-between gap-2">
-                <span className="truncate">{l.user?.name ?? `Юрист #${l.userId}`}</span>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-3">
+                  <LawyerAvatar
+                    name={l.user?.name ?? `Юрист ${l.userId}`}
+                    avatar={l.user?.avatar}
+                  />
+                  <span className="truncate">{l.user?.name ?? `Юрист #${l.userId}`}</span>
+                </div>
                 {l.isVerified && <Badge variant="success">перевірений</Badge>}
-              </span>
+              </div>
             }
             footer={
               <Button
@@ -161,8 +194,8 @@ export default function LawyersListPage() {
             </div>
             <p className="mt-2 line-clamp-2 text-sm">{l.bio ?? 'Опис відсутній.'}</p>
             <p className="mt-2 text-sm">
-              Рейтинг: <span className="font-semibold">{l.rating ?? '—'}</span> · Досвід:{' '}
-              {l.experienceYears} р. ·{' '}
+              Рейтинг: <span className="font-semibold">{l.rating ? `${l.rating}/5` : 'новий'}</span> · Досвід:{' '}
+              {l.experienceYears || '—'} р. ·{' '}
               <span className="font-semibold text-primary-600">
                 {formatPrice(l.pricePerHour)}/год
               </span>

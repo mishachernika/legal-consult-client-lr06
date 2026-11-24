@@ -1,5 +1,4 @@
-import { Link } from 'react-router';
-import Button from '@/components/common/Button';
+import ButtonLink from '@/components/common/ButtonLink';
 import { ROUTES } from '@/constants';
 
 export default function NotFoundPage() {
@@ -10,9 +9,7 @@ export default function NotFoundPage() {
       <p className="max-w-md text-gray-600 dark:text-gray-300">
         Схоже, ви перейшли за неіснуючим посиланням або сторінку було переміщено.
       </p>
-      <Link to={ROUTES.home}>
-        <Button>На головну</Button>
-      </Link>
+      <ButtonLink to={ROUTES.home}>На головну</ButtonLink>
     </div>
   );
 }

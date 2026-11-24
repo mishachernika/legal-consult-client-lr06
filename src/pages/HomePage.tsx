@@ -1,40 +1,12 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router';
+import { useQuery } from '@tanstack/react-query';
 import Badge from '@/components/common/Badge';
-import Button from '@/components/common/Button';
+import ButtonLink from '@/components/common/ButtonLink';
 import Card from '@/components/common/Card';
 import Input from '@/components/common/Input';
 import { ROUTES } from '@/constants';
-
-// Демонстраційний каталог сфер права (у ЛР05 список буде з API /api/specializations)
-const SPECIALIZATIONS = [
-  {
-    id: 1,
-    name: 'Цивільне право',
-    description: 'Договори, спадщина, відшкодування шкоди, право власності.',
-  },
-  {
-    id: 2,
-    name: 'Кримінальне право',
-    description: 'Захист у кримінальних провадженнях на всіх стадіях.',
-  },
-  {
-    id: 3,
-    name: 'Сімейне право',
-    description: 'Розірвання шлюбу, аліменти, поділ майна, усиновлення.',
-  },
-  {
-    id: 4,
-    name: 'Господарське право',
-    description: 'Реєстрація бізнесу, договори між компаніями, банкрутство.',
-  },
-  { id: 5, name: 'Трудове право', description: 'Звільнення, невиплата зарплати, трудові спори.' },
-  {
-    id: 6,
-    name: 'Податкове право',
-    description: 'Податкові перевірки, оскарження рішень контролюючих органів.',
-  },
-];
+import { specializationsService } from '@/services/specializations.service';
+import { useAuthStore } from '@/stores/authStore';
 
 const STEPS = [
   { title: 'Опишіть ситуацію', text: 'Створіть консультацію з темою та детальним описом питання.' },
@@ -50,50 +22,63 @@ const STEPS = [
 
 export default function HomePage() {
   const [query, setQuery] = useState('');
+  const user = useAuthStore((s) => s.user);
+  const { data: specializations = [], isPending } = useQuery({
+    queryKey: ['specializations'],
+    queryFn: specializationsService.getAll,
+  });
 
   const filtered = useMemo(
     () =>
-      SPECIALIZATIONS.filter(
+      specializations.filter(
         (s) =>
           s.name.toLowerCase().includes(query.toLowerCase()) ||
-          s.description.toLowerCase().includes(query.toLowerCase())
+          (s.description ?? '').toLowerCase().includes(query.toLowerCase())
       ),
-    [query]
+    [query, specializations]
   );
 
   return (
     <div className="flex flex-col gap-16">
       {/* Hero */}
-      <section className="flex flex-col items-center gap-6 py-10 text-center">
-        <Badge variant="info">Онлайн-платформа юридичних консультацій</Badge>
-        <h1 className="w-full max-w-3xl text-4xl font-bold tracking-tight text-gray-900 md:text-5xl dark:text-white">
-          Юридична допомога онлайн — швидко, прозоро, у реальному часі
-        </h1>
-        <p className="w-full max-w-2xl text-lg text-gray-600 dark:text-gray-300">
-          Оберіть юриста зі сфери права, що вас цікавить, створіть консультацію та отримуйте
-          відповіді в чаті — без дзвінків і паперів.
-        </p>
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <Link to={ROUTES.about}>
-            <Button size="lg">Дізнатися більше</Button>
-          </Link>
-          <Link to={ROUTES.login}>
-            <Button size="lg" variant="secondary">
-              Увійти
-            </Button>
-          </Link>
+      <section className="relative overflow-hidden rounded-3xl bg-primary-950 shadow-xl">
+        <img
+          src="/images/legal-consult-hero.jpg"
+          alt="Робочий простір юридичної консультації"
+          className="absolute inset-0 h-full w-full object-cover object-right opacity-60"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-primary-950 via-primary-950/90 to-primary-900/15" />
+        <div className="relative grid min-h-[480px] items-center px-6 py-14 sm:px-10 lg:grid-cols-2 lg:px-14">
+          <div className="max-w-xl text-left text-white">
+            <Badge variant="info">Онлайн-платформа юридичних консультацій</Badge>
+            <h1 className="mt-5 text-4xl font-bold tracking-tight md:text-5xl">
+              Юридична допомога, коли вона справді потрібна
+            </h1>
+            <p className="mt-5 text-lg leading-8 text-primary-100">
+              Знайдіть юриста за сферою права, обговоріть деталі в чаті та тримайте всі
+              консультації в одному кабінеті.
+            </p>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <ButtonLink to="/lawyers" size="lg">
+                Знайти юриста
+              </ButtonLink>
+              <ButtonLink to={user ? ROUTES.dashboard : ROUTES.register} size="lg" variant="secondary">
+                {user ? 'Відкрити кабінет' : 'Створити акаунт'}
+              </ButtonLink>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Статистика */}
+      {/* Переваги */}
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {[
-          { value: '120+', label: 'юристів на платформі' },
-          { value: '3 500+', label: 'проведених консультацій' },
-          { value: '4.8/5', label: 'середня оцінка юристів' },
+          { value: 'Пошук', label: 'юриста за потрібною сферою права' },
+          { value: 'Прозоро', label: 'ціна, досвід і відгуки у профілі' },
+          { value: 'У чаті', label: 'повідомлення без перезавантаження' },
         ].map((s) => (
           <Card key={s.label} className="text-center">
-            <p className="text-3xl font-bold text-primary-600">{s.value}</p>
+            <p className="text-xl font-bold text-primary-600">{s.value}</p>
             <p className="mt-1">{s.label}</p>
           </Card>
         ))}
@@ -115,7 +100,9 @@ export default function HomePage() {
             />
           </div>
         </div>
-        {filtered.length === 0 ? (
+        {isPending ? (
+          <p className="text-center text-gray-500 dark:text-gray-400">Завантаження сфер права...</p>
+        ) : filtered.length === 0 ? (
           <p className="text-center text-gray-500 dark:text-gray-400">
             Нічого не знайдено за запитом «{query}».
           </p>
@@ -130,9 +117,13 @@ export default function HomePage() {
                     <Badge variant="info">від 500 ₴/год</Badge>
                   </span>
                 }
-                footer={<Button size="sm">Знайти юриста</Button>}
+                footer={
+                  <ButtonLink to={`/lawyers?specializationId=${s.id}`} size="sm">
+                    Знайти юриста
+                  </ButtonLink>
+                }
               >
-                {s.description}
+                {s.description ?? 'Фахівці допоможуть розібратися у вашій ситуації.'}
               </Card>
             ))}
           </div>
@@ -166,11 +157,9 @@ export default function HomePage() {
           Зареєструйтеся за хвилину та поставте перше запитання перевіреному фахівцеві.
         </p>
         <div className="mt-6 flex justify-center gap-3">
-          <Link to={ROUTES.login}>
-            <Button size="lg" variant="secondary">
-              Створити акаунт
-            </Button>
-          </Link>
+          <ButtonLink to={user ? '/lawyers' : ROUTES.register} size="lg" variant="secondary">
+            {user ? 'Перейти до каталогу' : 'Створити акаунт'}
+          </ButtonLink>
         </div>
       </section>
     </div>
