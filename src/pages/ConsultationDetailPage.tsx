@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -11,7 +11,8 @@ import Card from '@/components/common/Card';
 import ErrorMessage from '@/components/common/ErrorMessage';
 import FormField from '@/components/common/FormField';
 import Input from '@/components/common/Input';
-import Modal from '@/components/common/Modal';
+import ConfirmDialog from '@/components/common/ConfirmDialog';
+import OnlineStatus from '@/components/OnlineStatus';
 import Select from '@/components/common/Select';
 import { PageSkeleton } from '@/components/common/Skeleton';
 import Textarea from '@/components/common/Textarea';
@@ -25,9 +26,9 @@ import {
 } from '@/schemas/consultation.schema';
 import { consultationsService } from '@/services/consultations.service';
 import { reviewsService } from '@/services/reviews.service';
-import { socket } from '@/services/socket';
 import { useAuthStore } from '@/stores/authStore';
-import type { ConsultationStatus } from '@/types/api.types';
+import { useSocketEvent } from '@/hooks/useSocketEvent';
+import type { ConsultationStatus, Message } from '@/types/api.types';
 import { getErrorMessage } from '@/utils/errors';
 import { formatDateTime, formatPrice } from '@/utils/format';
 
@@ -47,15 +48,6 @@ export default function ConsultationDetailPage() {
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
   const [deleteOpen, setDeleteOpen] = useState(false);
-
-  // Підписуємося на кімнату саме цієї консультації, щоб чат оновлювався без polling.
-  useEffect(() => {
-    if (!Number.isInteger(consultationId)) return;
-    socket.emit('consultation:join', consultationId);
-    return () => {
-      socket.emit('consultation:leave', consultationId);
-    };
-  }, [consultationId]);
 
   const {
     data: consultation,
@@ -77,6 +69,16 @@ export default function ConsultationDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['consultations'] }),
       queryClient.invalidateQueries({ queryKey: ['consultations', consultationId, 'messages'] }),
     ]);
+
+  // Реальний час (рівень 1): сервер шле message:new у кімнату consultation:<id>
+  // і consultation:updated учасникам (user:<id>). Ми лише інвалідуємо кеш —
+  // чат і статус оновлюються без перезавантаження і без другого вікна.
+  useSocketEvent<{ message: Message }>('message:new', ({ message }) => {
+    if (message.consultationId !== consultationId) return;
+    if (message.senderId !== user?.id) toast.success(`Нове повідомлення: ${message.text}`);
+    void invalidate();
+  });
+  useSocketEvent('consultation:updated', () => void invalidate());
 
   const statusMutation = useMutation({
     mutationFn: (status: ConsultationStatus) =>
@@ -178,11 +180,21 @@ export default function ConsultationDetailPage() {
           <dl className="flex flex-col gap-2 text-sm">
             <div className="flex justify-between gap-4">
               <dt className="text-gray-500">Клієнт</dt>
-              <dd className="font-medium">{consultation.client?.name}</dd>
+              <dd className="font-medium">
+                {consultation.client?.name}{' '}
+                {consultation.client && (
+                  <OnlineStatus userId={consultation.client.id} className="ml-1 align-middle" />
+                )}
+              </dd>
             </div>
             <div className="flex justify-between gap-4">
               <dt className="text-gray-500">Юрист</dt>
-              <dd className="font-medium">{consultation.lawyer?.name}</dd>
+              <dd className="font-medium">
+                {consultation.lawyer?.name}{' '}
+                {consultation.lawyer && (
+                  <OnlineStatus userId={consultation.lawyer.id} className="ml-1 align-middle" />
+                )}
+              </dd>
             </div>
             <div className="flex justify-between gap-4">
               <dt className="text-gray-500">Ціна</dt>
@@ -316,19 +328,15 @@ export default function ConsultationDetailPage() {
         </Card>
       )}
 
-      <Modal
-        open={deleteOpen}
+      <ConfirmDialog
+        isOpen={deleteOpen}
         title="Видалити консультацію?"
+        message={`Консультацію «${consultation.topic}» буде видалено разом із чатом і відгуком. Дію не можна скасувати.`}
         confirmText="Видалити"
         isLoading={deleteMutation.isPending}
         onConfirm={() => deleteMutation.mutate()}
-        onClose={() => setDeleteOpen(false)}
-      >
-        <p>
-          Консультацію «{consultation.topic}» буде видалено разом із чатом і відгуком. Дію не можна
-          скасувати.
-        </p>
-      </Modal>
+        onCancel={() => setDeleteOpen(false)}
+      />
     </div>
   );
 }

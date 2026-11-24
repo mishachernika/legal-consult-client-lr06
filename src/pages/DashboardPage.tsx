@@ -1,8 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router';
+import AvatarUpload from '@/components/AvatarUpload';
+import StatsChart from '@/components/StatsChart';
+import TaskBoard from '@/components/TaskBoard';
 import Badge from '@/components/common/Badge';
 import Card from '@/components/common/Card';
-import AdvancedWorkspace from '@/components/dashboard/AdvancedWorkspace';
+import Tabs from '@/components/common/Tabs';
 import {
   CONSULTATION_STATUS_LABELS,
   CONSULTATION_STATUS_VARIANTS,
@@ -13,7 +16,10 @@ import { notificationsService } from '@/services/notifications.service';
 import { useAuthStore } from '@/stores/authStore';
 import { formatDateTime, formatPrice } from '@/utils/format';
 
-// Головна панель керування: картки розділів + лічильник сповіщень + останні консультації
+const CHART_LIMIT = 100;
+
+// Головна панель керування: привітання + аватар, таби з оглядом,
+// графіком статусів (Recharts) і планувальником (dnd-kit)
 export default function DashboardPage() {
   const user = useAuthStore((s) => s.user);
 
@@ -31,20 +37,14 @@ export default function DashboardPage() {
     queryFn: () => consultationsService.getAll({ page: 1, limit: 5 }),
   });
 
-  return (
-    <div className="flex flex-col gap-8">
-      <div>
-        <h1 className="text-3xl font-bold">Вітаємо, {user?.name}!</h1>
-        <p className="mt-1 text-gray-600 dark:text-gray-300">
-          Роль: <Badge variant="info">{user?.role}</Badge>
-          {unreadData && unreadData.unreadCount > 0 && (
-            <span className="ml-2">
-              Непрочитаних сповіщень: <Badge variant="danger">{unreadData.unreadCount}</Badge>
-            </span>
-          )}
-        </p>
-      </div>
+  // Для графіка беремо до 100 останніх консультацій (сторінкою — один запит)
+  const { data: forChart } = useQuery({
+    queryKey: ['consultations', { chart: true, limit: CHART_LIMIT }],
+    queryFn: () => consultationsService.getAll({ page: 1, limit: CHART_LIMIT }),
+  });
 
+  const overview = (
+    <div className="flex flex-col gap-8">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {sections.map((s) => (
           <Link key={s.to} to={s.to}>
@@ -98,7 +98,75 @@ export default function DashboardPage() {
           </div>
         )}
       </section>
-      <AdvancedWorkspace consultations={recent?.data ?? []} />
+    </div>
+  );
+
+  const tabs = [
+    { label: 'Огляд', content: overview },
+    {
+      label: 'Аналітика',
+      content: (
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <StatsChart consultations={forChart?.data ?? []} title="Консультації за статусами" />
+          <Card title="Як читати графік">
+            <div className="flex flex-col gap-2 text-sm text-gray-600 dark:text-gray-300">
+              <p>
+                <Badge variant="warning">Очікує</Badge> — нові заявки, які ще не підтверджено.
+              </p>
+              <p>
+                <Badge variant="neutral">Підтверджено</Badge> — заплановані консультації.
+              </p>
+              <p>
+                <Badge variant="info">Триває</Badge> — консультації в роботі прямо зараз.
+              </p>
+              <p>
+                <Badge variant="success">Завершено</Badge> — успішно проведені сесії.
+              </p>
+              <p>
+                <Badge variant="danger">Скасовано</Badge> — відмінені або прострочені запити.
+              </p>
+            </div>
+          </Card>
+        </div>
+      ),
+    },
+    {
+      label: 'Планувальник',
+      content: (
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <TaskBoard />
+          <Card title="Як користуватися">
+            <div className="flex flex-col gap-2 text-sm text-gray-600 dark:text-gray-300">
+              <p>Перетягуйте завдання, щоб змінити порядок пріоритетів на тиждень.</p>
+              <p>Клік по назві позначає завдання виконаним, повторний — повертає назад.</p>
+              <p>
+                Порядок зберігається у браузері (localStorage) і не губиться після перезавантаження.
+              </p>
+            </div>
+          </Card>
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <div className="flex flex-col gap-8">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">Вітаємо, {user?.name}!</h1>
+          <p className="mt-1 flex items-center gap-2 text-gray-600 dark:text-gray-300">
+            Роль: <Badge variant="info">{user?.role}</Badge>
+            {unreadData && unreadData.unreadCount > 0 && (
+              <span className="ml-2">
+                Непрочитаних сповіщень: <Badge variant="danger">{unreadData.unreadCount}</Badge>
+              </span>
+            )}
+          </p>
+        </div>
+        <AvatarUpload />
+      </div>
+
+      <Tabs tabs={tabs} />
     </div>
   );
 }

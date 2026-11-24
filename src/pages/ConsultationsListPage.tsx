@@ -7,13 +7,14 @@ import Breadcrumbs from '@/components/common/Breadcrumbs';
 import Button from '@/components/common/Button';
 import EmptyState from '@/components/common/EmptyState';
 import Input from '@/components/common/Input';
-import Modal from '@/components/common/Modal';
+import ConfirmDialog from '@/components/common/ConfirmDialog';
 import Pagination from '@/components/common/Pagination';
 import Select from '@/components/common/Select';
 import { TableSkeleton } from '@/components/common/Skeleton';
 import Table, { type TableColumn } from '@/components/common/Table';
 import { CONSULTATION_STATUS_LABELS, CONSULTATION_STATUS_VARIANTS } from '@/constants';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useSocketEvent } from '@/hooks/useSocketEvent';
 import { consultationsService, type ConsultationsQuery } from '@/services/consultations.service';
 import { useAuthStore } from '@/stores/authStore';
 import type { Consultation, ConsultationStatus } from '@/types/api.types';
@@ -63,6 +64,18 @@ export default function ConsultationsListPage() {
     },
     onError: (e) => toast.error(e.message || 'Не вдалося видалити консультацію'),
   });
+
+  // Оновлення списку в реальному часі: сервер розсилає події після кожної зміни
+  // (consultationController.js), а ми лише інвалідуємо кеш — нові дані прибудуть самі.
+  useSocketEvent('consultation:created', () =>
+    queryClient.invalidateQueries({ queryKey: ['consultations'] })
+  );
+  useSocketEvent('consultation:updated', () =>
+    queryClient.invalidateQueries({ queryKey: ['consultations'] })
+  );
+  useSocketEvent('consultation:deleted', () =>
+    queryClient.invalidateQueries({ queryKey: ['consultations'] })
+  );
 
   // Правила повторюють серверні: адміністратор видаляє будь-яку консультацію,
   // клієнт — лише власну, доки вона очікує підтвердження.
@@ -190,21 +203,19 @@ export default function ConsultationsListPage() {
         </>
       )}
 
-      <Modal
-        open={deleteId !== null}
+      <ConfirmDialog
+        isOpen={deleteId !== null}
         title="Видалити консультацію?"
+        message={
+          deleting
+            ? `Консультацію «${deleting.topic}» буде видалено разом із чатом і відгуком. Дію не можна скасувати.`
+            : 'Консультацію буде видалено. Дію не можна скасувати.'
+        }
         confirmText="Видалити"
         isLoading={deleteMutation.isPending}
         onConfirm={() => deleteId !== null && deleteMutation.mutate(deleteId)}
-        onClose={() => setDeleteId(null)}
-      >
-        {deleting ? (
-          <p>
-            Консультацію «{deleting.topic}» буде видалено разом із чатом і відгуком. Дію не можна
-            скасувати.
-          </p>
-        ) : null}
-      </Modal>
+        onCancel={() => setDeleteId(null)}
+      />
     </div>
   );
 }

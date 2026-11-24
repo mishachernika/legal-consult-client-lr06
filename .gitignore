@@ -26,3 +26,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Аналіз бандла (rollup-plugin-visualizer, BUILD_STATS=1)
+stats.html

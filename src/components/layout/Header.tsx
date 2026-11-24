@@ -3,6 +3,7 @@ import { Link, NavLink } from 'react-router';
 import { APP_NAME, ROUTES } from '@/constants';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuthStore } from '@/stores/authStore';
+import NotificationBell from '@/components/NotificationBell';
 import { cn } from '@/utils/cn';
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
@@ -93,6 +94,7 @@ export default function Header() {
               </NavLink>
             </>
           )}
+          {user && <NotificationBell />}
           <button
             type="button"
             onClick={toggleTheme}
@@ -105,6 +107,7 @@ export default function Header() {
 
         {/* Кнопка мобільного меню */}
         <div className="flex items-center gap-2 md:hidden">
+          {user && <NotificationBell />}
           <button
             type="button"
             onClick={toggleTheme}

@@ -1,0 +1,49 @@
+import { create } from 'zustand';
+
+// Живе сповіщення, отримане через WebSocket (поза кешем TanStack Query:
+// це ephemeral клієнтський стан — «подія стала відомою застосунку»).
+export interface LiveNotification {
+  id: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+  title: string;
+  message: string;
+  timestamp: number;
+  read: boolean;
+}
+
+interface NotificationsState {
+  notifications: LiveNotification[];
+  add: (n: Pick<LiveNotification, 'type' | 'title' | 'message'>) => void;
+  markAsRead: (id: string) => void;
+  markAllAsRead: () => void;
+  clearAll: () => void;
+}
+
+const MAX_NOTIFICATIONS = 50;
+
+export const useNotificationsStore = create<NotificationsState>((set) => ({
+  notifications: [],
+
+  add: (n) =>
+    set((state) => ({
+      // зберігаємо не більше 50 останніх, щоб список не ріс безмежно
+      notifications: [
+        { ...n, id: crypto.randomUUID(), timestamp: Date.now(), read: false },
+        ...state.notifications,
+      ].slice(0, MAX_NOTIFICATIONS),
+    })),
+
+  markAsRead: (id) =>
+    set((state) => ({
+      notifications: state.notifications.map((n) => (n.id === id ? { ...n, read: true } : n)),
+    })),
+
+  markAllAsRead: () =>
+    set((state) => ({ notifications: state.notifications.map((n) => ({ ...n, read: true })) })),
+
+  clearAll: () => set({ notifications: [] }),
+}));
+
+// Похідне значення обчислюємо в селекторі: компонент перемальовується лише при зміні числа
+export const selectUnreadCount = (state: NotificationsState) =>
+  state.notifications.filter((n) => !n.read).length;

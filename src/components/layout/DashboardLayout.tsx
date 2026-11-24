@@ -1,12 +1,15 @@
-import { useState } from 'react';
-import { Link, NavLink, Outlet, useNavigate } from 'react-router';
+import { Suspense, useState } from 'react';
+import { Link, NavLink, useLocation, useNavigate, useOutlet } from 'react-router';
+import { AnimatePresence, motion } from 'motion/react';
 import toast from 'react-hot-toast';
 import Button from '@/components/common/Button';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
-import OnlineStatus from '@/components/realtime/OnlineStatus';
-import NotificationBell from '@/components/realtime/NotificationBell';
+import Loading from '@/components/common/Loading';
+import NotificationBell from '@/components/NotificationBell';
 import { APP_NAME, DASHBOARD_NAV } from '@/constants';
 import { useTheme } from '@/hooks/useTheme';
+import { useSocketConnection } from '@/hooks/useSocketConnection';
+import { usePresenceEvents } from '@/hooks/usePresenceEvents';
 import { authService } from '@/services/auth.service';
 import { useAuthStore } from '@/stores/authStore';
 import { cn } from '@/utils/cn';
@@ -115,6 +118,15 @@ export default function DashboardLayout() {
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false); // desktop: панель згорнута до іконок
   const [mobileOpen, setMobileOpen] = useState(false); // mobile: панель відкрита поверх контенту
+
+  // Одне з'єднання Socket.io на весь застосунок + присутність (онлайн-статуси)
+  useSocketConnection();
+  usePresenceEvents();
+
+  // Анімація переходів між сторінками (рівень 3): useOutlet() фіксує поточний
+  // піддерево маршруту, тому під час exit-анімації показується саме стара сторінка.
+  const location = useLocation();
+  const outlet = useOutlet();
 
   const visibleNav = DASHBOARD_NAV.filter(
     (item) => !('adminOnly' in item && item.adminOnly) || user?.role === 'ADMIN'
@@ -241,7 +253,6 @@ export default function DashboardLayout() {
           <div className="min-w-0">
             <p className="truncate text-sm text-gray-500 dark:text-gray-400">Вітаємо,</p>
             <p className="truncate font-semibold">{user?.name}</p>
-            {user && <OnlineStatus userId={user.id} />}
           </div>
           <div className="flex items-center gap-2">
             <NotificationBell />
@@ -291,7 +302,23 @@ export default function DashboardLayout() {
 
         <main className="container mx-auto w-full flex-grow px-4 py-6">
           <ErrorBoundary>
-            <Outlet />
+            {/* Без mode="wait": cold-lazy chunk нової сторінки підвішує перехід,
+                і стара сторінка лишалася б назавжди. Паралельний fade-in/fade-out
+                (sync) показує спинер всередині нового контейнера й не блокує вихід старої. */}
+            <AnimatePresence initial={false}>
+              <motion.div
+                key={location.pathname}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.18, ease: 'easeOut' }}
+              >
+                {/* Suspense саме тут, всередині анімаційного контейнера: lazy-чанк нової
+                    сторінки показує спинер всередині свого контейнера, а не підвішує
+                    перехід (інакше стара сторінка залишається на екрані назавжди) */}
+                <Suspense fallback={<Loading text="Завантаження сторінки..." />}>{outlet}</Suspense>
+              </motion.div>
+            </AnimatePresence>
           </ErrorBoundary>
         </main>
       </div>

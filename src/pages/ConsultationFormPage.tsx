@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { lazy, Suspense, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -6,12 +6,12 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import toast from 'react-hot-toast';
 import Breadcrumbs from '@/components/common/Breadcrumbs';
 import Button from '@/components/common/Button';
+import DateTimePicker from '@/components/common/DateTimePicker';
 import ErrorMessage from '@/components/common/ErrorMessage';
 import FormField from '@/components/common/FormField';
 import Input from '@/components/common/Input';
-import Select from '@/components/common/Select';
 import { PageSkeleton } from '@/components/common/Skeleton';
-import Textarea from '@/components/common/Textarea';
+import SearchCombobox, { type ComboboxOptionItem } from '@/components/common/SearchCombobox';
 import {
   consultationSchema,
   type ConsultationFormData,
@@ -22,9 +22,14 @@ import { lawyersService } from '@/services/lawyers.service';
 import { usersService } from '@/services/users.service';
 import { useAuthStore } from '@/stores/authStore';
 import { getErrorMessage } from '@/utils/errors';
+import Loading from '@/components/common/Loading';
+
+// Tiptap важкий — приєднуємо його окремим chunk-ом і завантажуємо лише на цій сторінці
+const RichTextEditor = lazy(() => import('@/components/common/RichTextEditor'));
 
 // Одна форма для створення (/consultations/create) і редагування (/consultations/:id/edit):
-// при редагуванні дані запису завантажуємо через useQuery і заповнюємо ними форму (reset)
+//律师 вибирається комбобоксом з пошуком, опис — rich text редактором Tiptap,
+// дата — календарем react-day-picker.
 export default function ConsultationFormPage() {
   const { id } = useParams<{ id: string }>();
   const isEdit = id !== undefined;
@@ -63,7 +68,9 @@ export default function ConsultationFormPage() {
     register,
     handleSubmit,
     reset,
+    setValue,
     setError,
+    watch,
     formState: { errors },
   } = useForm<ConsultationFormInput, unknown, ConsultationFormData>({
     resolver: zodResolver(consultationSchema),
@@ -88,6 +95,38 @@ export default function ConsultationFormPage() {
       } as ConsultationFormInput);
     }
   }, [existing, reset]);
+
+  // Опції комбобоксів формуються з довідників юристів і клієнтів
+  const lawyerOptions: ComboboxOptionItem[] = useMemo(
+    () =>
+      (lawyers?.data ?? []).map((l) => ({
+        value: String(l.userId),
+        label: l.user?.name ?? `Юрист #${l.userId}`,
+        description: [
+          l.specializations?.map((s) => s.name).join(', ') || 'сфери не вказано',
+          `рейтинг ${l.rating ?? '—'}`,
+        ].join(' · '),
+      })),
+    [lawyers]
+  );
+
+  const clientOptions: ComboboxOptionItem[] = useMemo(
+    () =>
+      (clients?.data ?? []).map((c) => ({
+        value: String(c.id),
+        label: c.name,
+        description: c.email,
+      })),
+    [clients]
+  );
+
+  const watchedLawyerId = watch('lawyerId');
+  const watchedClientId = watch('clientId');
+  const watchedScheduledAt = watch('scheduledAt');
+  const watchedDescription = watch('description') ?? '';
+
+  const selectedLawyer = lawyerOptions.find((o) => o.value === String(watchedLawyerId)) ?? null;
+  const selectedClient = clientOptions.find((o) => o.value === String(watchedClientId)) ?? null;
 
   const mutation = useMutation({
     mutationFn: (data: ConsultationFormData) => {
@@ -161,37 +200,53 @@ export default function ConsultationFormPage() {
       >
         {isAdmin && !isEdit && (
           <FormField label="Клієнт (від імені кого створюємо)" error={errors.clientId?.message}>
-            <Select {...register('clientId')}>
-              <option value="">Оберіть клієнта...</option>
-              {clients?.data.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name} ({c.email})
-                </option>
-              ))}
-            </Select>
+            {clientOptions.length === 0 ? (
+              <p className="text-sm text-gray-500">Список клієнтів завантажується...</p>
+            ) : (
+              <input type="hidden" {...register('clientId')} />
+            )}
+            <SearchCombobox
+              items={clientOptions}
+              value={selectedClient}
+              ariaLabel="Пошук клієнта"
+              placeholder="Почніть вводити ім'я або email..."
+              error={Boolean(errors.clientId)}
+              onChange={(item) =>
+                setValue('clientId', item ? item.value : '', {
+                  shouldValidate: true,
+                  shouldDirty: true,
+                })
+              }
+            />
           </FormField>
         )}
 
         <FormField label="Юрист" error={errors.lawyerId?.message}>
           {canChooseLawyer ? (
-            lawyersLoading ? (
-              <Input disabled placeholder="Завантаження списку юристів..." />
-            ) : (
-              <Select {...register('lawyerId')}>
-                <option value="">Оберіть юриста...</option>
-                {lawyers?.data.map((l) => (
-                  // createConsultation чекає lawyerId = userId юриста (findByUserId), не id профілю
-                  <option key={l.id} value={l.userId}>
-                    {l.user?.name ?? `Юрист #${l.userId}`} —{' '}
-                    {l.specializations?.map((s) => s.name).join(', ') ?? 'сфери не вказано'}
-                  </option>
-                ))}
-              </Select>
-            )
+            <>
+              {lawyersLoading ? (
+                <p className="text-sm text-gray-500">Завантаження списку юристів...</p>
+              ) : (
+                <input type="hidden" {...register('lawyerId')} />
+              )}
+              <SearchCombobox
+                items={lawyerOptions}
+                value={selectedLawyer}
+                ariaLabel="Пошук юриста"
+                placeholder="Пошук юриста за ім'ям або сферою права..."
+                error={Boolean(errors.lawyerId)}
+                onChange={(item) =>
+                  setValue('lawyerId', item ? item.value : '', {
+                    shouldValidate: true,
+                    shouldDirty: true,
+                  })
+                }
+              />
+            </>
           ) : (
             <>
               <input type="hidden" {...register('lawyerId')} />
-              <Input value={existing?.lawyer?.name ?? 'Обраний юрист'} disabled />
+              <Input value={existing?.lawyer?.name ?? 'Обраний юрист'} disabled readOnly />
             </>
           )}
         </FormField>
@@ -205,13 +260,17 @@ export default function ConsultationFormPage() {
             <FormField
               label="Опис ситуації"
               error={errors.description?.message}
-              hint="10–5000 символів"
+              hint="Виділяйте головне форматуванням — текст збережеться разом із розміткою"
             >
-              <Textarea
-                rows={6}
-                placeholder="Опишіть деталі вашого питання..."
-                {...register('description')}
-              />
+              <Suspense fallback={<Loading />}>
+                <RichTextEditor
+                  content={watchedDescription}
+                  error={Boolean(errors.description)}
+                  onChange={(html: string) =>
+                    setValue('description', html, { shouldValidate: true, shouldDirty: true })
+                  }
+                />
+              </Suspense>
             </FormField>
           </>
         ) : (
@@ -222,7 +281,15 @@ export default function ConsultationFormPage() {
         )}
 
         <FormField label="Запланований час (необов'язково)" error={errors.scheduledAt?.message}>
-          <Input type="datetime-local" {...register('scheduledAt')} />
+          <input type="hidden" {...register('scheduledAt')} />
+          <DateTimePicker
+            value={watchedScheduledAt ?? ''}
+            ariaLabel="Вибрати дату консультації"
+            error={Boolean(errors.scheduledAt)}
+            onChange={(v) =>
+              setValue('scheduledAt', v, { shouldValidate: true, shouldDirty: true })
+            }
+          />
         </FormField>
 
         {errors.root && <ErrorMessage message={errors.root.message ?? 'Помилка збереження'} />}

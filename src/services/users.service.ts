@@ -14,4 +14,14 @@ export const usersService = {
     const { data } = await api.get<PaginatedResponse<User>>('/users', { params });
     return data;
   },
+
+  // PUT /api/users/:id — власник або адмін (ЛР03). Використовується, наприклад,
+  // щоб прив'язати URL завантаженого аватара до профілю.
+  update: async (
+    id: number,
+    payload: { name?: string; phone?: string; avatar?: string | null }
+  ) => {
+    const { data } = await api.put<{ data: User }>(`/users/${id}`, payload);
+    return data.data;
+  },
 };

@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import Breadcrumbs from '@/components/common/Breadcrumbs';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
-import Modal from '@/components/common/Modal';
+import ConfirmDialog from '@/components/common/ConfirmDialog';
 import { TableSkeleton } from '@/components/common/Skeleton';
 import Table, { type TableColumn } from '@/components/common/Table';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -126,16 +126,19 @@ export default function SpecializationsListPage() {
         </>
       )}
 
-      <Modal
-        open={deleteId !== null}
+      <ConfirmDialog
+        isOpen={deleteId !== null}
         title="Видалити сферу права?"
+        message={
+          deleting
+            ? `Сферу «${deleting.name}» буде видалено з каталогу.`
+            : 'Сферу права буде видалено з каталогу.'
+        }
         confirmText="Видалити"
         isLoading={deleteMutation.isPending}
         onConfirm={() => deleteId !== null && deleteMutation.mutate(deleteId)}
-        onClose={() => setDeleteId(null)}
-      >
-        {deleting && <p>Сферу «{deleting.name}» буде видалено з каталогу.</p>}
-      </Modal>
+        onCancel={() => setDeleteId(null)}
+      />
     </div>
   );
 }
