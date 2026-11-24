@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useNavigate } from 'react-router';
 import toast from 'react-hot-toast';
 import Button from '@/components/common/Button';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
+import OnlineStatus from '@/components/realtime/OnlineStatus';
 import { APP_NAME, DASHBOARD_NAV } from '@/constants';
 import { useTheme } from '@/hooks/useTheme';
 import { authService } from '@/services/auth.service';
@@ -239,6 +240,7 @@ export default function DashboardLayout() {
           <div className="min-w-0">
             <p className="truncate text-sm text-gray-500 dark:text-gray-400">Вітаємо,</p>
             <p className="truncate font-semibold">{user?.name}</p>
+            {user && <OnlineStatus userId={user.id} />}
           </div>
           <div className="flex items-center gap-2">
             <button

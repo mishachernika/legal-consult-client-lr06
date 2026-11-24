@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -25,6 +25,7 @@ import {
 } from '@/schemas/consultation.schema';
 import { consultationsService } from '@/services/consultations.service';
 import { reviewsService } from '@/services/reviews.service';
+import { socket } from '@/services/socket';
 import { useAuthStore } from '@/stores/authStore';
 import type { ConsultationStatus } from '@/types/api.types';
 import { getErrorMessage } from '@/utils/errors';
@@ -46,6 +47,15 @@ export default function ConsultationDetailPage() {
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
   const [deleteOpen, setDeleteOpen] = useState(false);
+
+  // Підписуємося на кімнату саме цієї консультації, щоб чат оновлювався без polling.
+  useEffect(() => {
+    if (!Number.isInteger(consultationId)) return;
+    socket.emit('consultation:join', consultationId);
+    return () => {
+      socket.emit('consultation:leave', consultationId);
+    };
+  }, [consultationId]);
 
   const {
     data: consultation,
