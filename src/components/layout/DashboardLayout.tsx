@@ -1,4 +1,4 @@
-import { Suspense, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate, useOutlet } from 'react-router';
 import { AnimatePresence, motion } from 'motion/react';
 import toast from 'react-hot-toast';
@@ -114,6 +114,8 @@ function NavIcon({ name }: { name: string }) {
 export default function DashboardLayout() {
   const { theme, toggleTheme } = useTheme();
   const user = useAuthStore((s) => s.user);
+  const accessToken = useAuthStore((s) => s.accessToken);
+  const setUser = useAuthStore((s) => s.setUser);
   const logout = useAuthStore((s) => s.logout);
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false); // desktop: панель згорнута до іконок
@@ -122,6 +124,18 @@ export default function DashboardLayout() {
   // Одне з'єднання Socket.io на весь застосунок + присутність (онлайн-статуси)
   useSocketConnection();
   usePresenceEvents();
+
+  // localStorage може містити застарілі дані профілю після зміни облікового запису.
+  // Підтверджуємо поточну роль через токен, щоб клієнтський інтерфейс і права API не розходилися.
+  useEffect(() => {
+    if (!accessToken) return;
+    void authService
+      .me()
+      .then(({ data }) => setUser(data.data))
+      .catch(() => {
+        // Помилку авторизації обробить спільний Axios interceptor.
+      });
+  }, [accessToken, setUser]);
 
   // Анімація переходів між сторінками (рівень 3): useOutlet() фіксує поточний
   // піддерево маршруту, тому під час exit-анімації показується саме стара сторінка.
