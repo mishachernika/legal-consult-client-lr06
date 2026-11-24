@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import Button from '@/components/common/Button';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
 import OnlineStatus from '@/components/realtime/OnlineStatus';
+import NotificationBell from '@/components/realtime/NotificationBell';
 import { APP_NAME, DASHBOARD_NAV } from '@/constants';
 import { useTheme } from '@/hooks/useTheme';
 import { authService } from '@/services/auth.service';
@@ -243,6 +244,7 @@ export default function DashboardLayout() {
             {user && <OnlineStatus userId={user.id} />}
           </div>
           <div className="flex items-center gap-2">
+            <NotificationBell />
             <button
               type="button"
               onClick={toggleTheme}

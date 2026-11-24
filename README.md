@@ -10,7 +10,7 @@ React-клієнт для **онлайн-платформи юридичних �
 
 ## Нове в ЛР06
 
-- Socket.io-client: одне кероване з'єднання, JWT у handshake, reconnect, replay подій, присутність користувачів і реальне оновлення кешу TanStack Query;
+- Socket.io-client: одне кероване з'єднання, JWT у handshake, reconnect, replay подій, присутність користувачів, індикатор підключення та real-time лічильник непрочитаних;
 - доступні модальні вікна на Headless UI: портал, focus trap, Escape, блокування фону й анімація;
 - Dashboard Workspace: графік статусів (Recharts), tab-и, календар, пошукове dropdown-поле, dnd-kit для пріоритетів, rich-text нотатка й вибір аватара з preview/масштабом;
 - lazy loading усіх маршрутів і окремі chunks для React, Query, Socket.io та Recharts;
@@ -180,3 +180,14 @@ VITE_SOCKET_URL=https://<ваш-api>
 ```
 
 Після отримання URL клієнта задайте його як `FRONTEND_URL` серверної частини та перезапустіть API, щоб CORS і Socket.io приймали клієнт.
+
+## Перевірка перед здачею
+
+```bash
+npm run format:check
+npm run lint
+npm test
+npm run build
+```
+
+Для інтеграційної перевірки запустіть API ЛБ03 із PostgreSQL, а потім клієнт. Перевірте в двох вкладках: створення консультації, нове повідомлення в чаті, сповіщення та статус online. Для PWA відкрийте production build, встановіть застосунок через браузер і перевірте офлайн-екран після першого завантаження.
