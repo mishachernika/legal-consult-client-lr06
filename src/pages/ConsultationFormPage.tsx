@@ -160,7 +160,13 @@ export default function ConsultationFormPage() {
         topic: data.topic,
         description: data.description,
         scheduledAt: data.scheduledAt,
-        ...(isAdmin && data.clientId ? { clientId: data.clientId } : {}),
+        // API очікує clientId і для звичайного клієнта. Підставляємо його непомітно:
+        // користувач не має обирати самого себе у формі.
+        ...(isAdmin && data.clientId
+          ? { clientId: data.clientId }
+          : user?.id
+            ? { clientId: user.id }
+            : {}),
       };
       return consultationsService.create(payload);
     },
@@ -203,6 +209,7 @@ export default function ConsultationFormPage() {
             // адмін має явно обрати клієнта (сам сервер для ролі CLIENT підставляє req.user.userId)
             if (isAdmin && !isEdit && !data.clientId) {
               setError('clientId', { message: 'Оберіть клієнта' });
+              toast.error('Оберіть клієнта', { id: 'consultation-form-error' });
               return;
             }
             mutation.mutate(data);
@@ -214,7 +221,9 @@ export default function ConsultationFormPage() {
               formErrors.topic ??
               formErrors.description ??
               formErrors.scheduledAt;
-            toast.error(firstError?.message ?? 'Перевірте, чи всі поля заповнені правильно');
+            toast.error(firstError?.message ?? 'Перевірте, чи всі поля заповнені правильно', {
+              id: 'consultation-form-error',
+            });
           }
         )}
         className="space-y-4 rounded-lg bg-white p-6 shadow dark:bg-gray-900"

@@ -253,6 +253,32 @@ async function main() {
   await shot(page2, '09-chat-live-second');
   await page2.close();
 
+  // ---------- 8.1 Клієнт: створення без ручного вибору себе ----------
+  // Серверу передається clientId поточного користувача, але у формі клієнт
+  // не бачить і не обирає власний профіль.
+  const clientPage = await browser.newPage();
+  await clientPage.goto(BASE + '/login', { waitUntil: 'networkidle2' });
+  await clientPage.type('input[type=email]', 'olena.kovalchuk@example.com', { delay: 10 });
+  await clientPage.type('input[type=password]', 'password123', { delay: 10 });
+  await clientPage.click('button[type=submit]');
+  await clientPage.waitForFunction(() => location.pathname === '/dashboard', { timeout: 15000 });
+  await clientPage.goto(BASE + '/consultations/create?lawyerId=18', {
+    waitUntil: 'networkidle2',
+    timeout: 30000,
+  });
+  const clientHasOwnPicker = await clientPage.$('input[placeholder^="Почніть вводити"]');
+  await clientPage.type('input[placeholder^="Наприклад"]', 'E2E: заявка клієнта');
+  const clientEditor = await clientPage.waitForSelector('.tiptap', { timeout: 10000 });
+  await clientEditor.click();
+  await clientPage.keyboard.type('Клієнт створює консультацію без вибору власного профілю.');
+  await clientPage.evaluate(() => {
+    const btn = [...document.querySelectorAll('button[type=submit]')].find((b) => b.textContent.includes('Створити'));
+    btn?.click();
+  });
+  await clientPage.waitForFunction(() => /\/consultations\/\d+$/.test(location.pathname), { timeout: 20000 });
+  log('Клієнт: створення без поля вибору клієнта', !clientHasOwnPicker, clientPage.url());
+  await clientPage.close();
+
   // ---------- 9. Список юристів: infinite scroll ----------
   await page.goto(BASE + '/lawyers', { waitUntil: 'networkidle2', timeout: 30000 });
   await sleep(1000);

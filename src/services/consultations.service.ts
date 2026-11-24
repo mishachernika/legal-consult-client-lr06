@@ -22,7 +22,7 @@ export interface ConsultationPayload {
   topic: string;
   description: string;
   scheduledAt?: string;
-  /** лише для ADMIN — від імені якого клієнта створюємо */
+  /** клієнт консультації; для звичайного користувача це його власний профіль */
   clientId?: number;
 }
 
