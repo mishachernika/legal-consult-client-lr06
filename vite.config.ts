@@ -11,8 +11,9 @@ export default defineConfig({
     react(),
     tailwindcss(),
     // PWA (рівень 3, завдання 7): manifest українською + сервіс-воркер.
-    // API завжди лише з мережі (NetworkFirst без кешу відповідей),
-    // статики Vite прекаширує через precache (generateSW за замовчуванням).
+    // Персональні API-відповіді завжди лише з мережі, щоб service worker не
+    // зберігав дані консультацій, файли або токени у спільному браузерному кеші.
+    // Статику Vite прекаширує через precache (generateSW за замовчуванням).
     VitePWA({
       injectRegister: 'auto',
       registerType: 'prompt',
@@ -45,18 +46,10 @@ export default defineConfig({
         navigateFallback: '/index.html',
         runtimeCaching: [
           {
-            // Запити до API не кешуємо: дані завжди свіжі з сервера
+            // Дані й файли API можуть бути приватними, тому не кешуємо їх Workbox-ом.
+            // Короткочасний кеш даних інтерфейсу реалізований окремо через TanStack Query.
             urlPattern: ({ url }) => url.pathname.startsWith('/api/'),
             handler: 'NetworkOnly',
-          },
-          {
-            // Завантажені файли (аватари, вкладення) — NetworkFirst з кеш-фолбеком
-            urlPattern: ({ url }) => url.pathname.startsWith('/api/files/'),
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'files-cache',
-              expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 7 },
-            },
           },
         ],
       },

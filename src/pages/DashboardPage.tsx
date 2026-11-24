@@ -5,6 +5,7 @@ import StatsChart from '@/components/StatsChart';
 import TaskBoard from '@/components/TaskBoard';
 import Badge from '@/components/common/Badge';
 import Card from '@/components/common/Card';
+import RichText from '@/components/common/RichText';
 import Tabs from '@/components/common/Tabs';
 import {
   CONSULTATION_STATUS_LABELS,
@@ -87,7 +88,7 @@ export default function DashboardPage() {
                     </span>
                   }
                 >
-                  <p className="line-clamp-2 text-sm">{c.description}</p>
+                  <RichText html={c.description} className="line-clamp-2 text-sm" />
                   <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
                     {formatDateTime(c.createdAt)}
                     {c.price != null && ` · ${formatPrice(c.price)}`}

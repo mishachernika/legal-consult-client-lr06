@@ -6,13 +6,13 @@
 
 ## Опис проєкту
 
-React-клієнт для **онлайн-платформи юридичних консультацій**. Серверна частина — окремий репозиторій `legal-consult-api-lr03` (Node.js + Express + Prisma + PostgreSQL + Socket.io). ЛР06 завершує проєкт: реальний час, інтерактивні компоненти, оптимізація продуктивності, PWA, SEO, тести, CI/CD і підготовка до розгортання на Vercel.
+React-клієнт для **онлайн-платформи юридичних консультацій**. Серверна частина — окремий репозиторій `legal-consult-api-lr03` (Node.js + Express + Prisma + PostgreSQL + Socket.io). У ЛР06 я додав реальний час, інтерактивні компоненти, оптимізацію завантаження, PWA, SEO, автоматичні перевірки та конфігурацію для Vercel.
 
 ## Нове в ЛР06
 
 - **Socket.io-client**: єдине кероване з'єднання на застосунок (`autoConnect: false`, JWT передається в `socket.auth` під час `connectSocket`), хук підключення в `Layout`, `useSocketEvent` із коректним зняттям обробників;
-- **сповіщення в реальному часі**: дзвіночок `NotificationBell` (Zustand-сховище, лічильник непрочитаних у селекторі), оновлення списків через `queryClient.invalidateQueries` на подію `users:changed`;
-- **онлайн-статуси**: хук `usePresenceEvents` (`user:online` / `user:offline`) і компонент `OnlineStatus`;
+- **сповіщення в реальному часі**: дзвіночок `NotificationBell` слухає персональну подію `notification:new`, зберігає короткий live-потік у Zustand та показує лічильник непрочитаних;
+- **онлайн-статуси**: хук `usePresenceEvents` слухає `presence:update`, а компонент `OnlineStatus` показує стан учасників консультації;
 - **модальні вікна Headless UI 2**: портал, focus trap, Escape, блокування фону, анімації через `data-closed:`; `ConfirmDialog` замість `window.confirm()`;
 - **таби та випадне меню з пошуком**: `Tabs` і `SearchCombobox` на Headless UI;
 - **drag and drop**: `TaskBoard` на dnd-kit (перетягування клавіатурою теж працює);
@@ -20,13 +20,13 @@ React-клієнт для **онлайн-платформи юридичних �
 - **нескінченне прокручування**: каталог юристів — `useInfiniteQuery` + IntersectionObserver;
 - **завантаження зображень**: `AvatarUpload` із preview та обрізанням (`react-easy-crop`, завантаження у файловий сервіс ЛР02);
 - **календар**: `DateTimePicker` на `react-day-picker` для запланованої дати консультації;
-- **rich text редактор**: `RichTextEditor` (Tiptap) — окремий lazy-chunk, у формі опису консультації;
+- **rich text редактор**: `RichTextEditor` (Tiptap) — окремий lazy-chunk у формі опису консультації; на сторінці деталей HTML очищується через `RichText` перед відображенням;
 - **анімації переходів**: Motion (AnimatePresence) між сторінками кабінету;
 - **розбиття коду**: всі сторінки — `lazy()` + `Suspense` (компонент `Loading`), важкі модалки — через `SuspenseLatch`; аналіз bundle через `rollup-plugin-visualizer` (BUILD_STATS=1);
-- **PWA**: `vite-plugin-pwa` — web manifest (українською), service worker із precache, NetworkFirst для завантажених файлів і публічного довідника; іконки 192/512 + maskable;
+- **PWA**: `vite-plugin-pwa` — web manifest українською, service worker із precache статики, іконки 192/512 + maskable; приватні API-відповіді не кешуються;
 - **SEO**: метатеги description, theme-color, Open Graph і Twitter Card в `index.html`;
-- **тести**: Vitest + Testing Library (10 юніт-тестів) та e2e-скрипт `reports/e2e.cjs` — 21 перевірка повного сценарію (21/21 PASS);
-- **CI/CD**: GitHub Actions — `ci.yml` (lint, Prettier, тести, збірка) і `deploy.yml` (Vercel, пропускається без секретів), `vercel.json` з rewrite для SPA.
+- **тести**: Vitest + Testing Library (11 unit-тестів) та e2e-скрипт `reports/e2e.cjs` — 22 перевірки повного сценарію (22/22 PASS);
+- **CI/CD**: GitHub Actions — `ci.yml` (lint, Prettier, тести, збірка) і `deploy.yml` (Vercel після додавання секретів), `vercel.json` з rewrite для SPA.
 
 ## Функціональність
 
@@ -73,7 +73,7 @@ React-клієнт для **онлайн-платформи юридичних �
 | POST | `/api/reviews` | відгук після завершеної консультації |
 | GET | `/api/users` (ADMIN) | вибір клієнта/юриста у формі |
 | POST | `/api/files/upload` · GET `/api/files/:id` | файлове сховище (аватар) |
-| WS | Socket.io (`VITE_SOCKET_URL`), JWT у `auth.token` | `notification`, `message:new`, `users:changed`, `user:online`, `user:offline` |
+| WS | Socket.io (`VITE_SOCKET_URL`), JWT у `auth.token` | `notification:new`, `message:new`, `presence:update`, `consultation:created/updated/deleted`, `lawyer:updated/deleted` |
 
 ## Встановлення та запуск
 
@@ -111,6 +111,36 @@ Email: admin@legal.ua        (клієнти maria.grytsay@example.com, olena.ko
 Password: password123
 ```
 
+## Демонстрація роботи
+
+### Dashboard: аналітика та планувальник
+
+На Dashboard я зібрав робочий простір у трьох вкладках: огляд, статистика консультацій і планувальник. Графік отримує дані з API, а порядок завдань змінюється drag-and-drop та зберігається локально.
+
+![Аналітика консультацій](reports/screenshots/lab6-03-dashboard-analytics.png)
+
+![Планувальник із drag-and-drop](reports/screenshots/lab6-04-dashboard-planner.png)
+
+### Форма консультації та rich text
+
+Форма поєднує пошук юриста/клієнта, редактор Tiptap, календар і рольові правила. Після створення заявка відкривається у деталях без ручного оновлення сторінки.
+
+![Створена консультація](reports/screenshots/lab6-08-consultation-created.png)
+
+### Реальний час, зображення та адаптивність
+
+У сценарії e2e перевірено живий чат у двох вкладках, обрізання аватара, нескінченний каталог юристів та мобільне меню.
+
+| Живий чат | Обрізання аватара | Мобільне меню |
+|---|---|---|
+| ![Доставка повідомлення в іншу вкладку](reports/screenshots/lab6-09-chat-live-second.png) | ![Модальне вікно обрізання](reports/screenshots/lab6-05-crop-modal.png) | ![Sidebar на мобільному екрані](reports/screenshots/lab6-13-mobile-sidebar.png) |
+
+### Перевірка якості
+
+Перед фінальним комітом я виконав перевірки форматування, ESLint, unit-тести та production build.
+
+![Успішні перевірки якості](reports/screenshots/lab6-14-quality-checks.svg)
+
 ## Оптимізація продуктивності
 
 Після розбиття коду збірка виглядає так (Vite 8, phases gzip):
@@ -128,9 +158,9 @@ ImageCrop-*               ~26  kB (8 kB gzip)   — react-easy-crop
 
 ## PWA та офлайн-режим
 
-- `vite-plugin-pwa`, `registerType: 'autoUpdate'`; в `src/utils/pwaSetup.ts` — реєстрація service worker і тост про нову версію;
+- `vite-plugin-pwa`, `registerType: 'prompt'`; Vite автоматично реєструє service worker, а `src/utils/pwaSetup.ts` показує повідомлення про мережу й доступне оновлення;
 - маніфест: `name`/`short_name`/`description` українською, `lang: uk`, `display: standalone`, `theme_color`;
-- precache статичних ресурсів (build), runtime-кешування: `NetworkFirst` для завантажених файлів і публічного довідника спеціалізацій; персональні дані (`/api/consultations`, `/api/notifications`) не кешуються;
+- precache статичних ресурсів build; усі `/api/*` запити виконуються тільки через мережу, щоб не зберігати персональні консультації, повідомлення та файли у service worker; короткочасний кеш даних інтерфейсу забезпечує TanStack Query;
 - перевірка: `npm run build && npm run preview` → DevTools → Application → Service Workers; вкладка Network → Offline → перезавантаження: оболонка застосунку завантажується з кешу.
 
 ## Розгортання на Vercel
@@ -142,9 +172,9 @@ ImageCrop-*               ~26  kB (8 kB gzip)   — react-easy-crop
    VITE_SOCKET_URL=https://<ваш-api>
    ```
 3. Після отримання URL клієнта задати його як `FRONTEND_URL` серверної частини та перезапустити API (CORS і Socket.io).
-4. Далі Vercel розгортає проєкт при кожному пуші у `main`; `vercel.json` переписує всі шляхи на `index.html` (SPA-роутинг).
+4. Після першого успішного деплою вказати адресу клієнта у `FRONTEND_URL` серверної частини та перевірити CORS/Socket.io.
 
-Альтернативно — деплой через GitHub Actions: `.github/workflows/deploy.yml` перевозить збірку на Vercel після кожного пуша в `main`. Секрети репозиторію: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` (значення з `.vercel/project.json` після `npx vercel link`). Поки секретів немає, крок деплою автоматично пропускається (робочий процес лишається зеленим).
+Альтернативно — деплой через GitHub Actions: `.github/workflows/deploy.yml` запускає Vercel CLI після кожного push у `main`. Потрібні секрети `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` (значення з `.vercel/project.json` після `npx vercel link`). Поки їх немає, workflow чесно пропускає саме крок розгортання; це не є підтвердженням живого production-деплою.
 
 ## CI
 
@@ -152,13 +182,13 @@ ImageCrop-*               ~26  kB (8 kB gzip)   — react-easy-crop
 
 ## Тестування
 
-Юніт-тести (Vitest + Testing Library, 10 тестів):
+Юніт-тести (Vitest + Testing Library, 11 тестів):
 
 - `ConfirmDialog` — Escape, відкриття/закриття, дії підтвердження:
-- `NotificationBell` — прийом події `notification`, лічильник непрочитаних, зняття обробника після розмонтування;
+- `NotificationBell` — прийом події `notification:new`, лічильник непрочитаних, зняття обробника після розмонтування;
 - `ConsultationsListPage` — таблиця, інвалідація кешу.
 
-E2E (`node reports/e2e.cjs`, Puppeteer): логін, WS handshake (101), таби й графік Dashboard, drag-and-drop клавіатурою, завантаження аватара з обрізанням, CRUD консультацій з Combobox і Tiptap, доставка `message:new` у другу вкладку без перезавантаження, infinite scroll юристів (15 записів у протестовій базі), сторінки спеціалізацій і сповіщень, мобільний sidebar, відсутність JS-помилок у консолі — **21/21 PASS**.
+E2E (`node reports/e2e.cjs`, Puppeteer): логін, WS handshake (101), таби й графік Dashboard, drag-and-drop клавіатурою, завантаження аватара з обрізанням, CRUD консультацій з Combobox і Tiptap, доставка `message:new` у другу вкладку без перезавантаження, infinite scroll юристів (15 записів у тестовій базі), сторінки спеціалізацій і сповіщень, мобільний sidebar, відсутність JS-помилок у консолі — **22/22 PASS**.
 
 ## Перевірка перед здачею
 

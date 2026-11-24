@@ -101,6 +101,9 @@ export default function DateTimePicker({ value, onChange, ariaLabel, error }: Da
               locale={uk}
               disabled={{ before: today }} // консультацію не можна запланувати в минулому
               onSelect={(day) => {
+                // У режимі single DayPicker дозволяє зняти вибір повторним кліком.
+                // Порожню дату тут не відправляємо, щоб не викликати toLocalIso(undefined, ...).
+                if (!day) return;
                 onChange(`${toLocalIso(day as Date, '')}T${time || '10:00'}`);
               }}
               footer={

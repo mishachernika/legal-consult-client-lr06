@@ -11,6 +11,7 @@ import Card from '@/components/common/Card';
 import ErrorMessage from '@/components/common/ErrorMessage';
 import FormField from '@/components/common/FormField';
 import Input from '@/components/common/Input';
+import RichText from '@/components/common/RichText';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
 import OnlineStatus from '@/components/OnlineStatus';
 import Select from '@/components/common/Select';
@@ -213,7 +214,7 @@ export default function ConsultationDetailPage() {
               <dd className="font-medium">{formatDateTime(consultation.createdAt)}</dd>
             </div>
           </dl>
-          <p className="mt-4 whitespace-pre-wrap text-sm">{consultation.description}</p>
+          <RichText html={consultation.description} className="mt-4 text-sm" />
 
           {canChangeStatus && availableStatuses.length > 0 && (
             <div className="mt-4 flex flex-wrap gap-2 border-t border-gray-100 pt-4 dark:border-gray-700">
